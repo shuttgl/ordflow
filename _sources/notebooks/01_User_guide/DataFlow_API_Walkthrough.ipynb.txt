@@ -1,0 +1,808 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# DataFlow API walkthrough\n",
+    "Suhas Somnath <br>\n",
+    "4/6/2022 <br>\n",
+    "Oak Ridge National Laboratory"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 0. Prepare to use DataFlow's API:\n",
+    "\n",
+    "1. Generate an API Key from DataFlow's web interface"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "api_key = \"Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoyLCJleHAiOjE2ODIzOFA4MDB9.U6QU3a9_b9z879d_iIo9e37Whopkqp9Ha08Gyu0Ep58\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "2. Encrypt password(s) necessary to activate Globus endpoints securely\n",
+    "\n",
+    "Here, the two Globus endpoints (DataFlow server and destination) use the same authentication"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "enc_pwd = \"8yEtYvltC7RVjIz2o1EghgEZ--vpF6/dv7pkvXZwNV--suXOtctdkvPKnjrBUQoNEg==\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "3. Import the ``API`` class from the ``dflow`` package.\n",
+    "\n",
+    "Note that the ``ordflow`` package is now available via PyPi. So you can install the package via:\n",
+    "\n",
+    "``pip install ordflow``"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from ordflow import API"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Instantiate the API object with your personal API Key:"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Instantiate the API"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Using staging server as default\n"
+     ]
+    }
+   ],
+   "source": [
+    "api = API(api_key)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Check default settings"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'globus': {'destination_endpoint': '57230a10-7ba2-11e7-8c3b-22000b9923ef'},\n",
+       " 'transport': {'protocol': 'globus'}}"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.settings_get()\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 3. Update a default setting\n",
+    "\n",
+    "Here, we will switch the destination endpoint to ``olcf#dtn`` for illustration purposes"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'globus': {'destination_endpoint': 'ef1a9560-7ca1-11e5-992c-22000b96db58'},\n",
+       " 'transport': {'protocol': 'globus'}}"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.settings_set(\"globus.destination_endpoint\", \n",
+    "                            \"ef1a9560-7ca1-11e5-992c-22000b96db58\")\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Switching back the destination endpoint to ``cades#CADES-OR`` which is the default"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'globus': {'destination_endpoint': '57230a10-7ba2-11e7-8c3b-22000b9923ef'},\n",
+       " 'transport': {'protocol': 'globus'}}"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.settings_set(\"globus.destination_endpoint\", \n",
+    "                            \"57230a10-7ba2-11e7-8c3b-22000b9923ef\")\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4. List and view registered instruments"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[{'id': 1,\n",
+       "  'name': 'Cell Cycler',\n",
+       "  'description': 'Coin cell Cycler with environment chamber',\n",
+       "  'instrument_type': None}]"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.instrument_list()\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'id': 1,\n",
+       " 'name': 'Cell Cycler',\n",
+       " 'description': 'Coin cell Cycler with environment chamber',\n",
+       " 'instrument_type': None}"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.instrument_info(1)\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 5. Check to see if Globus endpoints are active:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'source_activation': {'code': 'AlreadyActivated'},\n",
+       " 'destination_activation': {'code': 'AutoActivated.CachedCredential'}}"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.globus_endpoints_active(\"57230a10-7ba2-11e7-8c3b-22000b9923ef\")\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6. Activate one or both endpoints as necessary:\n",
+    "Because the destination wasn't already activated, we can activate that specific endpoint. \n",
+    "\n",
+    "**Note**: An encrypted password is being used in place of the conventional password for safety reasons. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'status': 'ok'}"
+      ]
+     },
+     "execution_count": 12,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.globus_endpoints_activate(\"syz\", \n",
+    "                                         enc_pwd, \n",
+    "                                         encrypted=True, \n",
+    "                                         endpoint=\"destination\")\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'source_activation': {'code': 'AlreadyActivated'},\n",
+       " 'destination_activation': {'code': 'AlreadyActivated'}}"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.globus_endpoints_active()\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 7. Create a measurement Dataset\n",
+    "This creates a directory at the destination Globus Endpoint:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'id': 19,\n",
+       " 'name': 'My new dataset with nested metadata',\n",
+       " 'creator': {'id': 2, 'name': 'Suhas Somnath'},\n",
+       " 'dataset_files': [],\n",
+       " 'instrument': None,\n",
+       " 'metadata_field_values': [{'id': 15,\n",
+       "   'field_value': 'PZT',\n",
+       "   'field_name': 'Sample',\n",
+       "   'metadata_field': None},\n",
+       "  {'id': 16,\n",
+       "   'field_value': 'Asylum Research',\n",
+       "   'field_name': 'Microscope-Vendor',\n",
+       "   'metadata_field': None},\n",
+       "  {'id': 17,\n",
+       "   'field_value': 'MFP3D',\n",
+       "   'field_name': 'Microscope-Model',\n",
+       "   'metadata_field': None},\n",
+       "  {'id': 18,\n",
+       "   'field_value': '373',\n",
+       "   'field_name': 'Temperature',\n",
+       "   'metadata_field': None}]}"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.dataset_create(\"My new dataset with nested metadata\",\n",
+    "                               metadata={\"Sample\": \"PZT\", \n",
+    "                                         \"Microscope\": {\n",
+    "                                             \"Vendor\": \"Asylum Research\",\n",
+    "                                             \"Model\": \"MFP3D\"\n",
+    "                                             },\n",
+    "                                         \"Temperature\": 373\n",
+    "                                        }\n",
+    "                              )\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Getting the dataset ID programmatically to use later on:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "19"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "dataset_id = response['id']\n",
+    "dataset_id"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 8. Upload data file(s) to Dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "using Globus since other file transfer adapters have not been implemented\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "{'id': 50,\n",
+       " 'name': 'AFM_Topography.PNG',\n",
+       " 'file_length': 201287,\n",
+       " 'file_type': '',\n",
+       " 'created_at': '2022-04-25 22:33:53 UTC',\n",
+       " 'relative_path': '',\n",
+       " 'is_directory': False}"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.file_upload(\"./AFM_Topography.PNG\", dataset_id)\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Upload another data file to the same dataset:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "using Globus since other file transfer adapters have not been implemented\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "{'id': 51,\n",
+       " 'name': 'measurement_configuration.txt',\n",
+       " 'file_length': 1172,\n",
+       " 'file_type': '',\n",
+       " 'created_at': '2022-04-25 22:34:01 UTC',\n",
+       " 'relative_path': 'foo/bar',\n",
+       " 'is_directory': False}"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.file_upload(\"./measurement_configuration.txt\", dataset_id, relative_path=\"foo/bar\")\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 9. Search Dataset:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'total': 2,\n",
+       " 'has_more': False,\n",
+       " 'results': [{'id': 18,\n",
+       "   'created_at': '2022-04-25T22:12:47Z',\n",
+       "   'name': 'Dataset with nested metadata 1',\n",
+       "   'dataset_files': [],\n",
+       "   'metadata_field_values': [{'id': 12,\n",
+       "     'field_value': 'PZT',\n",
+       "     'field_name': 'Sample',\n",
+       "     'metadata_field': None},\n",
+       "    {'id': 13,\n",
+       "     'field_value': 'Asylum Research',\n",
+       "     'field_name': 'Microscope-Vendor',\n",
+       "     'metadata_field': None},\n",
+       "    {'id': 14,\n",
+       "     'field_value': 'MFP3D',\n",
+       "     'field_name': 'Microscope-Model',\n",
+       "     'metadata_field': None}]},\n",
+       "  {'id': 19,\n",
+       "   'created_at': '2022-04-25T22:31:07Z',\n",
+       "   'name': 'My new dataset with nested metadata',\n",
+       "   'dataset_files': [{'id': 50,\n",
+       "     'name': 'AFM_Topography.PNG',\n",
+       "     'file_length': 201287,\n",
+       "     'file_type': '',\n",
+       "     'created_at': '2022-04-25 22:33:53 UTC',\n",
+       "     'relative_path': '',\n",
+       "     'is_directory': False},\n",
+       "    {'id': 51,\n",
+       "     'name': 'measurement_configuration.txt',\n",
+       "     'file_length': 1172,\n",
+       "     'file_type': '',\n",
+       "     'created_at': '2022-04-25 22:34:01 UTC',\n",
+       "     'relative_path': 'foo/bar',\n",
+       "     'is_directory': False},\n",
+       "    {'id': 52,\n",
+       "     'name': 'foo',\n",
+       "     'file_length': None,\n",
+       "     'file_type': None,\n",
+       "     'created_at': '2022-04-25 22:34:01 UTC',\n",
+       "     'relative_path': '',\n",
+       "     'is_directory': True},\n",
+       "    {'id': 53,\n",
+       "     'name': 'bar',\n",
+       "     'file_length': None,\n",
+       "     'file_type': None,\n",
+       "     'created_at': '2022-04-25 22:34:01 UTC',\n",
+       "     'relative_path': 'foo',\n",
+       "     'is_directory': True}],\n",
+       "   'metadata_field_values': [{'id': 15,\n",
+       "     'field_value': 'PZT',\n",
+       "     'field_name': 'Sample',\n",
+       "     'metadata_field': None},\n",
+       "    {'id': 16,\n",
+       "     'field_value': 'Asylum Research',\n",
+       "     'field_name': 'Microscope-Vendor',\n",
+       "     'metadata_field': None},\n",
+       "    {'id': 17,\n",
+       "     'field_value': 'MFP3D',\n",
+       "     'field_name': 'Microscope-Model',\n",
+       "     'metadata_field': None},\n",
+       "    {'id': 18,\n",
+       "     'field_value': '373',\n",
+       "     'field_name': 'Temperature',\n",
+       "     'metadata_field': None}]}]}"
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.dataset_search(\"nested\")\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Parsing the response to get the dataset of interest for us:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "19"
+      ]
+     },
+     "execution_count": 20,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "dset_id = response['results'][1]['id']\n",
+    "dset_id"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 10. View this Dataset:\n",
+    "This view shows both the files and metadata contained in a dataset:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'id': 19,\n",
+       " 'name': 'My new dataset with nested metadata',\n",
+       " 'creator': {'id': 2, 'name': 'Suhas Somnath'},\n",
+       " 'dataset_files': [{'id': 50,\n",
+       "   'name': 'AFM_Topography.PNG',\n",
+       "   'file_length': 201287,\n",
+       "   'file_type': '',\n",
+       "   'created_at': '2022-04-25 22:33:53 UTC',\n",
+       "   'relative_path': '',\n",
+       "   'is_directory': False},\n",
+       "  {'id': 51,\n",
+       "   'name': 'measurement_configuration.txt',\n",
+       "   'file_length': 1172,\n",
+       "   'file_type': '',\n",
+       "   'created_at': '2022-04-25 22:34:01 UTC',\n",
+       "   'relative_path': 'foo/bar',\n",
+       "   'is_directory': False},\n",
+       "  {'id': 52,\n",
+       "   'name': 'foo',\n",
+       "   'file_length': None,\n",
+       "   'file_type': None,\n",
+       "   'created_at': '2022-04-25 22:34:01 UTC',\n",
+       "   'relative_path': '',\n",
+       "   'is_directory': True},\n",
+       "  {'id': 53,\n",
+       "   'name': 'bar',\n",
+       "   'file_length': None,\n",
+       "   'file_type': None,\n",
+       "   'created_at': '2022-04-25 22:34:01 UTC',\n",
+       "   'relative_path': 'foo',\n",
+       "   'is_directory': True}],\n",
+       " 'instrument': None,\n",
+       " 'metadata_field_values': [{'id': 15,\n",
+       "   'field_value': 'PZT',\n",
+       "   'field_name': 'Sample',\n",
+       "   'metadata_field': None},\n",
+       "  {'id': 16,\n",
+       "   'field_value': 'Asylum Research',\n",
+       "   'field_name': 'Microscope-Vendor',\n",
+       "   'metadata_field': None},\n",
+       "  {'id': 17,\n",
+       "   'field_value': 'MFP3D',\n",
+       "   'field_name': 'Microscope-Model',\n",
+       "   'metadata_field': None},\n",
+       "  {'id': 18,\n",
+       "   'field_value': '373',\n",
+       "   'field_name': 'Temperature',\n",
+       "   'metadata_field': None}]}"
+      ]
+     },
+     "execution_count": 21,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "response = api.dataset_info(dset_id)\n",
+    "response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 11. View files uploaded via DataFlow:\n",
+    "We're not using DataFlow here but just viewing the destination file system.\n",
+    "\n",
+    "Datasets are sorted by date:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "! ls -hlt ~/dataflow/untitled_instrument/"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "There may be more than one dataset per day. Here we only have one"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!ls -hlt ~/dataflow/untitled_instrument/2022-04-06/"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Viewing the root directory of the dataset we just created:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!ls -hlt ~/dataflow/untitled_instrument/2022-04-06/135750_atomic_force_microscopy_scan_of_pzt/"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We will very soon be able to specify root level metadata that will be stored in ``metadata.json``.\n",
+    "\n",
+    "We can also see the nested directories: ``foo/bar`` where we uploaded the second file:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!ls -hlt  ~/dataflow/untitled_instrument/2022-04-06/135750_atomic_force_microscopy_scan_of_pzt/foo/"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Looking at the inner most directory - ``bar``:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!ls -hlt ~/dataflow/untitled_instrument/2022-04-06/135750_atomic_force_microscopy_scan_of_pzt/foo/bar"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
